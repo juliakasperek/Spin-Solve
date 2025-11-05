@@ -1,4 +1,7 @@
 #include "MainController.h"
+#include "Difficulty.h"
+#include "GameController.h"
+#include "Game.h"
 #include <QMessageBox>
 #include <QDebug>
 #include <QCloseEvent>
@@ -30,8 +33,26 @@ MainController::MainController(QWidget *parent) : QWidget(parent) {
 
 
 void MainController::startGame() {
-    QMessageBox::information(this, "Start Game", "Game would start here!");
-    qDebug() << "Start Game pressed";
+    Difficulty dlg(this);
+    if (dlg.exec() == QDialog::Accepted) {
+        int difficulty = dlg.getSelectedDifficulty();
+        qDebug() << "Difficulty selected:" << (difficulty == 0 ? "Easy" : "Hard");
+
+        // Open the game screen
+        GameController *gameScreen = new GameController(difficulty);
+
+        // When the game screen closes, show the main menu again
+        connect(gameScreen, &QWidget::destroyed, this, [=]() {
+            this->show();
+        });
+
+        gameScreen->setWindowTitle("Spin & Solve - Game");
+        gameScreen->resize(700, 500);
+        gameScreen->show();
+
+        // Hide the main menu instead of closing it
+        this->hide();
+    }
 }
 
 void MainController::showInstructions() {
@@ -45,7 +66,7 @@ void MainController::closeEvent(QCloseEvent *event) {
         "Exit Game",
         "Do you want to leave the game?",
         QMessageBox::Yes | QMessageBox::No
-    );
+        );
 
     if (reply == QMessageBox::Yes) {
         event->accept();
