@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>images/SPIN_SOLVE.png</file>
+        <file>images/gameScreen.png</file>
+        <file>images/Instructions.png</file>
+    </qresource>
+    <qresource prefix="/new/prefix1"/>
+</RCC>

@@ -38,6 +38,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Difficulty.cpp
         GameController.h
         GameController.cpp
+        resources.qrc
+        Instructions.h
+        Instructions.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET 3307_Project APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
