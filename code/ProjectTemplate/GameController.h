@@ -2,44 +2,61 @@
 #define GAMECONTROLLER_H
 
 #include <QWidget>
-#include <QPushButton>
 #include <QLabel>
 #include <QLineEdit>
-#include <QString>
-#include <QCloseEvent>
+#include <QPushButton>
 #include <QSet>
+#include "Wheel.h"
+#include "PlayerGems.h"
+#include "PhraseHandler.h"
 
-class GameController : public QWidget {
+class GameController : public QWidget
+{
     Q_OBJECT
 
 public:
-    explicit GameController(int difficulty, QWidget *parent = nullptr);
+    explicit GameController(int diff, QWidget *parent = nullptr);
 
 protected:
-    void closeEvent(QCloseEvent *event) override; // handle X button to exit game and return to main screen
+    void closeEvent(QCloseEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    // Game state
+    int difficulty;
+    QString displayedPhrase;
+    QSet<QChar> guessedLetters;
+    PhraseHandler *phraseHandler = nullptr;
+    bool bypassCloseConfirm = false;
+
+    // UI components
+    QLabel *phraseLabel;
+    QLabel *gemsLabel;
+    QLineEdit *guessedLettersBox;
+    QPushButton *spinButton;
+    QPushButton *buyVowelButton;
+    QPushButton *buyHintButton;
+    QPushButton *mainMenuButton;
+    QPushButton *helpButton;
+    QPushButton *solveButton;
+
+    // Wheel, gems, and free hint management
+    Wheel *wheel = nullptr;
+    PlayerGems playerGems;
+    QLabel *freeHintsLabel;
+    int freeHintsCount = 0;
+
+    // Helper methods
+    void updateDisplayedPhrase();
+    void setUpWheel();
+    void setUpUI();
+    void initializePhrase();
 
 private slots:
     void spinWheel();
     void buyVowel();
     void buyHint();
-
-private:
-    int difficulty;  // 0 = easy, 1 = hard
-    int gems;
-    QString phrase;
-    QString displayedPhrase;
-
-    QLabel *phraseLabel;
-    QLineEdit *guessedLettersBox;
-    QPushButton *spinButton;
-    QPushButton *buyVowelButton;
-    QPushButton *buyHintButton;
-
-    int currentSegment;  // segment landed on
-    QSet<QChar> guessedLetters; // track guessed letters
-
-    void updateDisplayedPhrase();
+    void solvePhrase();
 };
 
-#endif //GAMECONTROLLER_H
-
+#endif // GAMECONTROLLER_H

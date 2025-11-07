@@ -33,7 +33,8 @@ Instructions::Instructions(QWidget *parent)
         "If your guess is wrong, you won’t earn those bonuses.<br>"
         "3. Guess consonants to reveal letters in the hidden phrase.<br>"
         "4. Use your gems to buy vowels or get hints.<br>"
-        "5. Solve the phrase before time runs out to win!<br><br>"
+        "5. If you decide to guess the phrase and you are incorrect, you can still continue playing.<br>"
+        "6. Solve the phrase before time runs out to win!<br><br>"
         "Good luck, contestant!"
         );
 

@@ -5,14 +5,14 @@
 PhraseLibrary::PhraseLibrary() {
     std::srand(std::time(nullptr));
 
-    // EASY PHRASES (short, recognizable)
+    // EASY PHRASES
     easyPhrase = {
         "LET IT GO",           // Frozen
         "JUST KEEP SWIMMING",  // Finding Nemo
         "TO INFINITY AND BEYOND" // Toy Story
     };
 
-    // HARD PHRASES (longer or trickier)
+    // HARD PHRASES
     hardPhrase = {
         "I AM YOUR FATHER",                        // Star Wars
         "MAY THE FORCE BE WITH YOU",               // Star Wars
