@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(3307_Project VERSION 0.1 LANGUAGES CXX)
+project(Project VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
-set(TS_FILES 3307_Project_en_CA.ts)
+set(TS_FILES Project_en_CA.ts)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -23,45 +23,45 @@ set(PROJECT_SOURCES
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(3307_Project
+    qt_add_executable(Project
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        MainController.cpp
+        help.cpp
+        help.h
         MainController.h
-        PhraseLibrary.cpp
-        PhraseLibrary.h
-        game.cpp
-        game.h
+        MainController.cpp
+        GameController.h
+        PlayerGems.h
         Wheel.cpp
         Wheel.h
-        Difficulty.h
-        Difficulty.cpp
-        GameController.h
         GameController.cpp
-        resources.qrc
-        Instructions.h
         Instructions.cpp
-        PlayerGems.h
-        PhraseHandler.h
-        PhraseHandler.cpp
+        difficulty.cpp
+        difficulty.h
+        phrasehandler.cpp
+        PhraseLibrary.cpp
+        PhraseLibrary.h
+        phrasehandler.h
+        instructions.h
+        images.qrc
 
 
     )
 # Define target properties for Android with Qt 6 as:
-#    set_property(TARGET 3307_Project APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
+#    set_property(TARGET Project APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
     qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 else()
     if(ANDROID)
-        add_library(3307_Project SHARED
+        add_library(Project SHARED
             ${PROJECT_SOURCES}
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
-        add_executable(3307_Project
+        add_executable(Project
             ${PROJECT_SOURCES}
         )
     endif()
@@ -69,15 +69,15 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(3307_Project PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(Project PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
-  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.3307_Project)
+  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.Project)
 endif()
-set_target_properties(3307_Project PROPERTIES
+set_target_properties(Project PROPERTIES
     ${BUNDLE_ID_OPTION}
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
@@ -86,12 +86,12 @@ set_target_properties(3307_Project PROPERTIES
 )
 
 include(GNUInstallDirs)
-install(TARGETS 3307_Project
+install(TARGETS Project
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(3307_Project)
+    qt_finalize_executable(Project)
 endif()

@@ -1,12 +1,14 @@
+#include "MainController.h"
+
 #include <QApplication>
 #include <QMainWindow>
 #include <QMessageBox>
-#include "MainController.h"
-
 
 int main(int argc, char *argv[]) {
+    // Initialize the Qt application
     QApplication app(argc, argv);
 
+    // Create the main game window
     MainController window;
     window.setWindowTitle("Spin & Solve");
     window.resize(700, 500);

@@ -21,5 +21,3 @@ private:
 };
 
 #endif // PHRASEHANDLER_H
-
-

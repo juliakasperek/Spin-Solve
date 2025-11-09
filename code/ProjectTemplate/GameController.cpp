@@ -2,20 +2,103 @@
 #include "MainController.h"
 #include "PhraseLibrary.h"
 #include "PlayerGems.h"
+#include "Help.h"
 #include "PhraseHandler.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
+#include <QDebug>
 #include <QCloseEvent>
 #include <QPainter>
 #include <QInputDialog>
 
 GameController::GameController(int diff, QWidget *parent)
-    : QWidget(parent), difficulty(diff), playerGems(0, this), phraseHandler(nullptr)
+    : QWidget(parent), difficulty(diff), playerGems(0, this)
 {
     initializePhrase();
     setUpUI();
+}
+
+void GameController::setUpWheel()
+{
+    if (!wheel) {
+        wheel = new Wheel(this);
+        wheel->setFixedSize(280, 280);
+        wheel->setStyleSheet(
+            "border: 5px solid #FFE3F8;"
+            "border-radius: 200px;"
+            "background-color: #FFE3F8;"
+            );
+
+        disconnect(wheel, nullptr, this, nullptr);
+
+        connect(wheel, &Wheel::landedSegment, this, [=](int index){
+            QStringList segments = { "2 gems","-5 seconds","3 gems","Free Hint",
+                                    "1 gem","-10 seconds","2 gems","4 gems" };
+            QString landedSegment = segments[index];
+
+            wheelResultLabel->setText("Wheel landed on: " + landedSegment);
+
+            if (landedSegment == "Free Hint") {
+                freeHintsCount++;
+                freeHintsLabel->setText("Free Hints: " + QString::number(freeHintsCount));
+                return;
+            }
+
+            bool validGuess = false;
+            while (!validGuess) {
+                bool ok;
+                QString guess = QInputDialog::getText(this, "Guess a Letter",
+                                                      "Enter a letter (non-vowel only):",
+                                                      QLineEdit::Normal, "", &ok);
+                if (!ok) break; // user cancelled
+
+                if (guess.isEmpty() || guess.length() != 1 || !guess[0].isLetter()) {
+                    QMessageBox::warning(this, "Invalid Input", "Enter a single letter.");
+                    continue; // prompt again
+                }
+
+                QChar letter = guess[0].toUpper();
+
+                if (QString("AEIOU").contains(letter)) {
+                    QMessageBox::warning(this, "Invalid Letter", "Vowels are not allowed!");
+                    continue; // prompt again
+                }
+
+                if (guessedLetters.contains(letter)) {
+                    QMessageBox::information(this, "Already Guessed", "You already guessed that letter!");
+                    continue; // prompt again
+                }
+
+                // valid guess
+                guessedLetters.insert(letter);
+                validGuess = true;
+
+                QString lettersText = "Guessed Letters: ";
+                for (auto l : guessedLetters)
+                    lettersText += QString(l) + " ";
+                guessedLettersBox->setText(lettersText);
+
+                if (phraseHandler->guessLetter(letter)) {
+                    updateDisplayedPhrase();
+
+                    if (landedSegment.contains("gem")) {
+                        int gemAmount = landedSegment.split(" ")[0].toInt();
+                        playerGems.addGems(gemAmount);
+                    }
+
+                    if (phraseHandler->isComplete()) {
+                        QMessageBox::information(this, "You Win!", "You guessed the full phrase!");
+                    }
+
+                } else {
+                    QMessageBox::information(this, "Incorrect", "The letter is not in the phrase.");
+                }
+            }
+        });
+
+    }
 }
 
 void GameController::initializePhrase()
@@ -51,87 +134,13 @@ void GameController::updateDisplayedPhrase()
     phraseLabel->setStyleSheet("font-family: monospace; font-size: 30px; font-weight: bold;");
 }
 
-void GameController::setUpWheel()
-{
-    if (!wheel) {
-        wheel = new Wheel(this);
-        wheel->setFixedSize(280, 280);
-        wheel->setStyleSheet(
-            "border: 5px solid #FFE3F8;"
-            "border-radius: 200px;"
-            "background-color: #FFE3F8;"
-            );
-
-        connect(wheel, &Wheel::landedSegment, this, [=](int index){
-            QStringList segments = { "2 gems","-5 seconds","3 gems","Free Hint",
-                                    "1 gem","-10 seconds","2 gems","4 gems" };
-            QString landedSegment = segments[index];
-            QMessageBox::information(this, "Wheel Spin", "Wheel landed on: " + landedSegment);
-
-            if (landedSegment.contains("gem")) {
-                int gemAmount = landedSegment.split(" ")[0].toInt();
-                playerGems.addGems(gemAmount);
-            }
-            else if (landedSegment == "Free Hint") {
-                freeHintsCount++;
-                freeHintsLabel->setText("Free Hints: " + QString::number(freeHintsCount));
-            }
-
-
-            // Prompt user to guess a letter
-            while (true) {
-                bool ok;
-                QString guess = QInputDialog::getText(this, "Guess a Letter",
-                                                      "Enter a letter (non-vowel only):",
-                                                      QLineEdit::Normal, "", &ok);
-                if (!ok) break;
-
-                if (guess.isEmpty() || guess.length() != 1) {
-                    QMessageBox::warning(this, "Invalid Input", "Enter a single letter.");
-                    continue;
-                }
-
-                QChar letter = guess[0].toUpper();
-                if (letter == 'A' || letter == 'E' || letter == 'I' || letter == 'O' || letter == 'U') {
-                    QMessageBox::warning(this, "Invalid Guess", "Please guess a non-vowel!");
-                    continue;
-                }
-
-                if (guessedLetters.contains(letter)) {
-                    QMessageBox::warning(this, "Already Guessed", "This letter was already guessed.");
-                    continue;
-                }
-
-                guessedLetters.insert(letter);
-
-                // Update guessed letters box
-                QString lettersText = "Guessed Letters: ";
-                for (auto it = guessedLetters.begin(); it != guessedLetters.end(); ++it)
-                    lettersText += QString(*it) + " ";
-                guessedLettersBox->setText(lettersText);
-
-                // Update phrase using PhraseHandler
-                if (phraseHandler->guessLetter(letter)) {
-                    updateDisplayedPhrase();
-                    if (phraseHandler->isComplete()) {
-                        QMessageBox::information(this, "You Win!", "You guessed the full phrase!");
-                    }
-                } else {
-                    QMessageBox::information(this, "Incorrect", "The letter is not in the phrase.");
-                }
-                break;
-            }
-        });
-    }
-}
-
 void GameController::setUpUI()
 {
     // Phrase label
     phraseLabel = new QLabel(displayedPhrase, this);
     phraseLabel->setAlignment(Qt::AlignCenter);
     phraseLabel->setWordWrap(true);
-    phraseLabel->setStyleSheet("font-family: monospace; font-size: 30px; font-weight: bold;");
+    phraseLabel->setStyleSheet("font-size: 30px; font-weight: bold;");
 
     // Guessed letters box
     guessedLettersBox = new QLineEdit(this);
@@ -152,17 +161,25 @@ void GameController::setUpUI()
     freeHintsLabel->setFixedWidth(120);
     freeHintsLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
 
-
     connect(&playerGems, &PlayerGems::gemsChanged, this, [=](int newGems){
         gemsLabel->setText("💎 Gems: " + QString::number(newGems));
     });
 
+    // Wheel label
+    wheelResultLabel = new QLabel("", this);
+    wheelResultLabel->setAlignment(Qt::AlignCenter);
+    wheelResultLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
+
     setUpWheel();
 
+    // Left buttons
     mainMenuButton = new QPushButton("Main Menu", this);
     helpButton = new QPushButton("Help", this);
     mainMenuButton->setFixedSize(80, 30);
     helpButton->setFixedSize(80, 30);
+
+    connect(mainMenuButton, &QPushButton::clicked, this, &GameController::returnToMainMenu);
+    connect(helpButton, &QPushButton::clicked, this, &GameController::openHelpScreen);
 
     QVBoxLayout *leftButtonsLayout = new QVBoxLayout();
     leftButtonsLayout->addStretch();
@@ -171,30 +188,27 @@ void GameController::setUpUI()
     leftButtonsLayout->addStretch();
     leftButtonsLayout->setSpacing(10);
 
+    // --- Wheel + guessed letters vertically ---
     QVBoxLayout *wheelLayout = new QVBoxLayout();
     wheelLayout->addWidget(wheel, 0, Qt::AlignCenter);
+    wheelLayout->addWidget(wheelResultLabel, 0, Qt::AlignCenter);
+    wheelLayout->setSpacing(0);
     wheelLayout->addWidget(guessedLettersBox, 0, Qt::AlignCenter);
     wheelLayout->setAlignment(Qt::AlignCenter);
-    wheelLayout->setSpacing(10);
+
+    // --- Wheel row ---
+    QVBoxLayout *labelsLayout = new QVBoxLayout();
+    labelsLayout->addWidget(gemsLabel, 0, Qt::AlignCenter);
+    labelsLayout->addWidget(freeHintsLabel, 0, Qt::AlignCenter);
 
     QHBoxLayout *wheelRow = new QHBoxLayout();
     wheelRow->addLayout(leftButtonsLayout);
-    wheelRow->addSpacing(10);
+    wheelRow->addSpacing(0);
     wheelRow->addLayout(wheelLayout);
-    wheelRow->addSpacing(10);
+    wheelRow->addSpacing(0);
+    wheelRow->addLayout(labelsLayout);
 
-    QVBoxLayout *scoreLayout = new QVBoxLayout();
-    scoreLayout->addWidget(freeHintsLabel, 0, Qt::AlignCenter);
-    scoreLayout->addWidget(gemsLabel, 0, Qt::AlignCenter);
-
-    QHBoxLayout *scoreWrapper = new QHBoxLayout();
-    scoreWrapper->addStretch();
-    scoreWrapper->addLayout(scoreLayout);
-    scoreWrapper->addSpacing(30);
-
-    wheelRow->addLayout(scoreWrapper);
-    wheelRow->addLayout(scoreLayout);
-
+    // --- Bottom action buttons ---
     spinButton = new QPushButton("Spin Wheel", this);
     buyVowelButton = new QPushButton("Buy Vowel (3 gems)", this);
     buyHintButton = new QPushButton("Buy Hint (5 gems)", this);
@@ -214,6 +228,7 @@ void GameController::setUpUI()
     bottomButtons->addStretch();
     bottomButtons->setSpacing(10);
 
+    // --- Main layout ---
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(phraseLabel);
     mainLayout->addLayout(wheelRow);
@@ -243,12 +258,14 @@ void GameController::buyVowel()
                                               QLineEdit::Normal, "", &ok);
         if (!ok) break;
 
-        if (guess.isEmpty() || guess.length() != 1) {
+        if (guess.isEmpty() || guess.length() != 1 || !guess[0].isLetter()) {
             QMessageBox::warning(this, "Invalid Input", "Enter a single vowel.");
             continue;
         }
 
         QChar letter = guess[0].toUpper();
+
+
         if (!(letter == 'A' || letter == 'E' || letter == 'I' || letter == 'O' || letter == 'U')) {
             QMessageBox::warning(this, "Invalid Input", "That's not a vowel.");
             continue;
@@ -280,7 +297,6 @@ void GameController::buyVowel()
 
 void GameController::buyHint()
 {
-    // first check if the player has a free hint available
     if (freeHintsCount > 0) {
         QMessageBox::StandardButton useHint = QMessageBox::question(
             this,
@@ -293,23 +309,21 @@ void GameController::buyHint()
             freeHintsCount--;
             freeHintsLabel->setText("Free Hints: " + QString::number(freeHintsCount));
             QMessageBox::information(this, "Hint", "Here’s your free hint!");
-            // add hint logic here later
+            return;
+        }
+        else{
             return;
         }
     }
 
-    // next, check if the player has enough gems
     if (playerGems.getGems() < 5) {
         QMessageBox::warning(this, "Not enough gems", "Need 5 gems or a free hint!");
         return;
     }
 
-    // spend gems if no free hints used
     playerGems.spendGems(5);
     QMessageBox::information(this, "Hint", "Hint purchased with 5 gems!");
-    // add your real hint logic here
 }
-
 
 void GameController::solvePhrase()
 {
@@ -337,10 +351,9 @@ void GameController::solvePhrase()
 
         int ret = msgBox.exec();
         if (ret == QMessageBox::Ok) {
-            bypassCloseConfirm = true; // << set the flag
-            this->close();             // close this window safely
-        }
-        else {
+            // go back to main menu
+            returnToMainMenu();
+        } else {
             qApp->quit();
         }
 
@@ -353,27 +366,15 @@ void GameController::solvePhrase()
 }
 
 
-void GameController::closeEvent(QCloseEvent *event)
+void GameController::returnToMainMenu()
 {
-    if (bypassCloseConfirm) {
-        // open main menu without asking
-        MainController *mainMenu = new MainController();
-        mainMenu->setWindowTitle("Spin & Solve");
-        mainMenu->resize(700, 500);
-        mainMenu->show();
-
-        event->accept(); // close this window
-        return;
-    }
-
     QMessageBox::StandardButton reply = QMessageBox::question(
-        this, "Exit Game", "Are you sure you want to exit?",
+        this, "Exit Game", "Do you want to exit the game?",
         QMessageBox::Yes | QMessageBox::No
         );
 
     if (reply == QMessageBox::Yes) {
         if (wheel) { delete wheel; wheel = nullptr; }
-        if (phraseHandler) { delete phraseHandler; phraseHandler = nullptr; }
         guessedLetters.clear();
         displayedPhrase.clear();
         playerGems.resetGems(10);
@@ -383,17 +384,21 @@ void GameController::closeEvent(QCloseEvent *event)
         mainMenu->resize(700, 500);
         mainMenu->show();
 
-        event->accept();
-    } else {
-        event->ignore();
+        this->close();
     }
 }
 
+void GameController::openHelpScreen()
+{
+    Help *helpScreen = new Help(this);
+    helpScreen->setWindowModality(Qt::ApplicationModal);
+    helpScreen->show();
+}
 
 void GameController::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-    QPixmap background(":/images/images/background.png");
+    QPixmap background(":/images/background.png");
     painter.drawPixmap(rect(), background);
 
     QWidget::paintEvent(event);

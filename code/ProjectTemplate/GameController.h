@@ -1,14 +1,15 @@
 #ifndef GAMECONTROLLER_H
 #define GAMECONTROLLER_H
 
+#include "Wheel.h"
+#include "PlayerGems.h"
+#include "PhraseHandler.h"
+
 #include <QWidget>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QSet>
-#include "Wheel.h"
-#include "PlayerGems.h"
-#include "PhraseHandler.h"
 
 class GameController : public QWidget
 {
@@ -17,21 +18,20 @@ class GameController : public QWidget
 public:
     explicit GameController(int diff, QWidget *parent = nullptr);
 
-protected:
-    void closeEvent(QCloseEvent *event) override;
-    void paintEvent(QPaintEvent *event) override;
-
 private:
     // Game state
     int difficulty;
+    QString phrase;
     QString displayedPhrase;
     QSet<QChar> guessedLetters;
     PhraseHandler *phraseHandler = nullptr;
     bool bypassCloseConfirm = false;
 
+
     // UI components
     QLabel *phraseLabel;
     QLabel *gemsLabel;
+    QLabel *wheelResultLabel;
     QLineEdit *guessedLettersBox;
     QPushButton *spinButton;
     QPushButton *buyVowelButton;
@@ -40,23 +40,29 @@ private:
     QPushButton *helpButton;
     QPushButton *solveButton;
 
-    // Wheel, gems, and free hint management
+    // Wheel and gems management
     Wheel *wheel = nullptr;
     PlayerGems playerGems;
     QLabel *freeHintsLabel;
     int freeHintsCount = 0;
 
+private:
     // Helper methods
     void updateDisplayedPhrase();
     void setUpWheel();
     void setUpUI();
     void initializePhrase();
+    void paintEvent(QPaintEvent *event);
+    void handleGuess();
 
 private slots:
     void spinWheel();
     void buyVowel();
     void buyHint();
+    void returnToMainMenu();
+    void openHelpScreen();
     void solvePhrase();
 };
 
 #endif // GAMECONTROLLER_H
+

@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QLabel>
 
+// Displays the game's instructions screen
 class Instructions : public QWidget
 {
     Q_OBJECT
@@ -13,7 +14,7 @@ public:
     explicit Instructions(QWidget *parent = nullptr);
 
 signals:
-    void backToMenu(); // signal to return to main menu
+    void backToMenu(); // Return to the main menu
 
 private:
     QPushButton *backButton;

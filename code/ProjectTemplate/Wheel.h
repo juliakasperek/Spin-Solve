@@ -18,7 +18,7 @@ public:
         : QGraphicsPixmapItem(pixmap) {}
 };
 
-// Wheel widget containing the spinning wheel and arrow
+// Wheel widget containing the spinning wheel and arrow graphics
 class Wheel : public QWidget {
     Q_OBJECT
 
@@ -46,10 +46,10 @@ private:
     int endAngle;
     int numSegments = 8;
     double segmentAngle = 360.0 / numSegments;
-    bool isSpinning = false;
     double currentRotation = 0;
+    bool isSpinning = false;
 
-    // Setup functions
+    // Helper functions
     void setUpWheelItem();
     void setUpArrow();
 };
