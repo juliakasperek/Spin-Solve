@@ -5,13 +5,26 @@ CONFIG += qt
 QT += core gui widgets
 
 SOURCES += \
+    Difficulty.cpp \
+        GameController.cpp \
+    Help.cpp \
+    Instructions.cpp \
         MainController.cpp \
+    PhraseHandler.cpp \
         PhraseLibrary.cpp \
-        game.cpp \
+        Wheel.cpp \
         main.cpp
 
 HEADERS += \
+    Difficulty.h \
+    GameController.h \
+    Help.h \
+    Instructions.h \
     MainController.h \
+    PhraseHandler.h \
     PhraseLibrary.h \
-    Player.h \
-    game.h
+    PlayerGems.h \
+    Wheel.h \
+
+RESOURCES += \
+    resources.qrc
