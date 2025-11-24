@@ -13,7 +13,7 @@ Help::Help(QWidget *parent)
 
     // Background image
     QLabel *background = new QLabel(this);
-    QPixmap pix(":/images/Instructions.png");
+    QPixmap pix(":/images/images/Instructions.png");
     background->setPixmap(pix.scaled(size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     background->setGeometry(0, 0, width(), height());
     background->lower(); // send it behind all other widgets

@@ -24,7 +24,9 @@ class Wheel : public QWidget {
 
 public:
     explicit Wheel(QWidget *parent = nullptr);
+
     void spinWheel();
+    void stopSpin();
 
 signals:
     void landedSegment(int index);

@@ -12,6 +12,7 @@ SOURCES += \
         MainController.cpp \
     PhraseHandler.cpp \
         PhraseLibrary.cpp \
+    Timer.cpp \
         Wheel.cpp \
         main.cpp
 
@@ -24,7 +25,8 @@ HEADERS += \
     PhraseHandler.h \
     PhraseLibrary.h \
     PlayerGems.h \
-    Wheel.h \
+    Timer.h \
+    Wheel.h
 
 RESOURCES += \
     resources.qrc

@@ -10,9 +10,9 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QSet>
+#include <QMessageBox>
 
-class GameController : public QWidget
-{
+class GameController : public QWidget {
     Q_OBJECT
 
 public:
@@ -26,11 +26,13 @@ private:
     QSet<QChar> guessedLetters;
     PhraseHandler *phraseHandler = nullptr;
     bool bypassCloseConfirm = false;
-
+    bool letterDialogOpen = false;
+    bool gameActive = true;
 
     // UI components
     QLabel *phraseLabel;
     QLabel *gemsLabel;
+    QLabel *categoryLabel;
     QLabel *wheelResultLabel;
     QLineEdit *guessedLettersBox;
     QPushButton *spinButton;
@@ -46,6 +48,16 @@ private:
     QLabel *freeHintsLabel;
     int freeHintsCount = 0;
 
+    // Timer management
+    QTimer *gameTimer = nullptr;
+    QLabel *timerLabel = nullptr;
+    int remainingTime;
+    QString timeText;
+
+    // Message Boxes and Dialogs
+    QList<QMessageBox*> activeMessageBoxes;
+    QList<QDialog*> activeDialogs;
+
 private:
     // Helper methods
     void updateDisplayedPhrase();
@@ -54,12 +66,17 @@ private:
     void initializePhrase();
     void paintEvent(QPaintEvent *event);
     void handleGuess();
+    void updateTimer();
+    void startNewGame();
+    void closeAllDialogs();
+    void endGame(const QString &title, const QString &message);
+    void askForLetter();
 
 private slots:
     void spinWheel();
     void buyVowel();
     void buyHint();
-    void returnToMainMenu();
+    void returnToMainMenu(bool skipConfirmation);
     void openHelpScreen();
     void solvePhrase();
 };

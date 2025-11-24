@@ -4,15 +4,20 @@
 #include <string>
 #include <vector>
 
+struct Phrase {
+    std::string text;
+    std::string category;
+};
+
 class PhraseLibrary {
 public:
     PhraseLibrary();
 
-    std::string getRandomPhrase(const std::string &difficulty);
+    Phrase getRandomPhrase(const std::string &difficulty);
 
 private:
-    std::vector<std::string> easyPhrase;
-    std::vector<std::string> hardPhrase;
+    std::vector<Phrase> easyPhrase;
+    std::vector<Phrase> hardPhrase;
 
     int lastEasyIndex;
     int lastHardIndex;

@@ -37,7 +37,7 @@ Wheel::Wheel(QWidget *parent)
 // Loads the wheel image and positions it in the center of the screen
 void Wheel::setUpWheelItem()
 {
-    QPixmap wheelPixmap(":/images/pink.png");
+    QPixmap wheelPixmap(":/images/images/pink.png");
     wheelItem = new WheelItem(wheelPixmap);
 
     // Set rotation origin to center of the wheel
@@ -59,7 +59,7 @@ void Wheel::setUpWheelItem()
 // Loads the arrow image that points to the resulting segment after the spin.
 void Wheel::setUpArrow()
 {
-    QPixmap arrowPixmap(":/images/arrow.png");
+    QPixmap arrowPixmap(":/images/images/arrow.png");
     arrowItem = new QGraphicsPixmapItem(arrowPixmap);
 
     // Place the arrow above the wheel
@@ -70,9 +70,9 @@ void Wheel::setUpArrow()
 }
 
 // Starts the spinning animation for the wheel.
-void Wheel::spinWheel()
-{
+void Wheel::spinWheel() {
     if (isSpinning) return; // Prevents double spins
+
     isSpinning = true;
 
     // Randomize final wheel position after its rotation
@@ -92,8 +92,7 @@ void Wheel::spinWheel()
 /* Called when the spin animation ends.
  * It calculates which segment the arrow points to.
  */
-void Wheel::handleAnimationEnd()
-{
+void Wheel::handleAnimationEnd() {
     // Calculate the final resting segemnt of the wheel after it spins
     double finalAngle = fmod(endAngle, 360.0);
     currentRotation = finalAngle;  // Remember the last angle
@@ -110,3 +109,30 @@ void Wheel::handleAnimationEnd()
     // Emit the result based on where the wheel stops (the arrow points to that segment)
     emit landedSegment(index);
 }
+
+void Wheel::stopSpin()
+{
+    if (!isSpinning) return; // nothing to stop
+
+    if (animation && animation->state() == QAbstractAnimation::Running) {
+        animation->stop(); // stop the animation immediately
+    }
+
+    // Mark as not spinning
+    isSpinning = false;
+
+    // Record current rotation of the wheel
+    currentRotation = wheelItem->rotation();
+
+    // Calculate the adjusted angle as in handleAnimationEnd
+    double arrowOffset = 45.0 / 2.0; // half of segment angle
+    double adjustedAngle = fmod(currentRotation + arrowOffset, 360.0);
+
+    // Find the segment index
+    int index = static_cast<int>(adjustedAngle / segmentAngle);
+    index = numSegments - 1 - index;
+
+    // Emit the result
+    emit landedSegment(index);
+}
+

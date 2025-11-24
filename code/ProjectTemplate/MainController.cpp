@@ -18,7 +18,7 @@ MainController::MainController(QWidget *parent) : QWidget(parent) {
 
     // Background image using QLabel
     QLabel *background = new QLabel(this);
-    QPixmap pix(":/images/SPIN_SOLVE.png");
+    QPixmap pix(":/images/images/SPIN_SOLVE.png");
     background->setPixmap(pix.scaled(size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     background->setGeometry(0, 0, width(), height());
     background->lower(); // send it behind all other widgets
