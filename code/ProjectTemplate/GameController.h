@@ -21,69 +21,76 @@ public:
 private:
     // Game state
     int difficulty;
+    int freeHintsCount = 0;
     QString phrase;
     QString displayedPhrase;
     QSet<QChar> guessedLetters;
-    PhraseHandler *phraseHandler = nullptr;
     bool bypassCloseConfirm = false;
     bool letterDialogOpen = false;
     bool gameActive = true;
 
-    // UI components
-    QLabel *phraseLabel;
-    QLabel *gemsLabel;
-    QLabel *categoryLabel;
-    QLabel *wheelResultLabel;
-    QLineEdit *guessedLettersBox;
-    QPushButton *spinButton;
-    QPushButton *buyVowelButton;
-    QPushButton *buyHintButton;
-    QPushButton *mainMenuButton;
-    QPushButton *helpButton;
-    QPushButton *solveButton;
-
-    // Wheel and gems management
+    PhraseHandler *phraseHandler = nullptr;
     Wheel *wheel = nullptr;
     PlayerGems playerGems;
-    QLabel *freeHintsLabel;
-    int freeHintsCount = 0;
+
+    // UI elements
+    QLabel *phraseLabel = nullptr;
+    QLabel *gemsLabel = nullptr;
+    QLabel *categoryLabel = nullptr;
+    QLabel *wheelResultLabel = nullptr;
+    QLabel *freeHintsLabel = nullptr;
+    QLabel *timerLabel = nullptr;
+
+    QLineEdit *guessedLettersBox = nullptr;
+
+    QPushButton *spinButton = nullptr;
+    QPushButton *buyVowelButton = nullptr;
+    QPushButton *buyHintButton = nullptr;
+    QPushButton *mainMenuButton = nullptr;
+    QPushButton *helpButton = nullptr;
+    QPushButton *solveButton = nullptr;
 
     // Timer management
     QTimer *gameTimer = nullptr;
-    QLabel *timerLabel = nullptr;
     int remainingTime;
     QString timeText;
 
-    // Message Boxes and Dialogs
+    // Dialog Tracking
     QList<QMessageBox*> activeMessageBoxes;
     QList<QDialog*> activeDialogs;
 
 private:
-    // Helper methods
-    void updateDisplayedPhrase();
+    // Setup/ Initialization
     void setUpWheel();
     void setUpUI();
     void initializePhrase();
+    void setUpLabels();
+
+    // Rendering
     void paintEvent(QPaintEvent *event);
-    void handleGuess();
+
+    // Game Logic
+    void updateDisplayedPhrase();
     void updateTimer();
+    void updateTimerLabel();
+    void handleGuess();
     void startNewGame();
-    void closeAllDialogs();
     void endGame(const QString &title, const QString &message);
     void askForLetter();
     void startLetterGuessing(const QString &landedSegment);
     void showWarningAndRetry(const QString &title, const QString &text, std::function<void()> retry, bool retryDialog);
     void handleWheelReward(const QString &landedSegment);
     void handleIncorrectGuess(const QString &landedSegment);
-    void updateTimerLabel();
+    void closeAllDialogs();
 
 private slots:
+    // Slots
     void spinWheel();
     void buyVowel();
     void buyHint();
-    void returnToMainMenu(bool skipConfirmation);
-    void openHelpScreen();
     void solvePhrase();
+    void openHelpScreen();
+    void returnToMainMenu(bool skipConfirmation);
 };
 
 #endif // GAMECONTROLLER_H

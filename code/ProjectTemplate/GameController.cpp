@@ -19,16 +19,10 @@ GameController::GameController(int diff, QWidget *parent)
 
     setFixedSize(750, 550);
 
-    categoryLabel = new QLabel("Category: ", this);
-    categoryLabel->setAlignment(Qt::AlignCenter);
-    categoryLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
-
-    initializePhrase();
     setUpUI();
 }
 
 void GameController::setUpWheel() {
-
     if (!wheel) {
         wheel = new Wheel(this);
         wheel->setFixedSize(280, 280);
@@ -247,26 +241,23 @@ void GameController::updateTimer() {
 
     remainingTime--;
 
-    int minutes = remainingTime / 60;
-    int seconds = remainingTime % 60;
-    timerLabel->setText(QString("Time: %1:%2")
-                            .arg(minutes)
-                            .arg(seconds, 2, 10, QChar('0')));
+    updateTimerLabel();
 }
 
-void GameController::setUpUI() {
+void GameController::setUpLabels() {
+
+    // Category label
+    categoryLabel = new QLabel("Category: ", this);
+    categoryLabel->setAlignment(Qt::AlignCenter);
+    categoryLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
+
+    initializePhrase();
+
     // Phrase label
     phraseLabel = new QLabel(displayedPhrase, this);
     phraseLabel->setAlignment(Qt::AlignCenter);
     phraseLabel->setWordWrap(true);
     phraseLabel->setStyleSheet("font-size: 30px; font-weight: bold;");
-
-    // Guessed letters box
-    guessedLettersBox = new QLineEdit(this);
-    guessedLettersBox->setReadOnly(true);
-    guessedLettersBox->setAlignment(Qt::AlignCenter);
-    guessedLettersBox->setStyleSheet("font-size: 18px;");
-    guessedLettersBox->setFixedWidth(450);
 
     // Gems label
     gemsLabel = new QLabel("💎 Gems: " + QString::number(playerGems.getGems()), this);
@@ -279,26 +270,17 @@ void GameController::setUpUI() {
     });
 
     // Timer label
+    int initialTime = (difficulty == 0) ? 120 : 180; // 20 or 180 seconds
+    remainingTime = initialTime;
 
-    if (difficulty == 0) {
-        remainingTime = 20; // 2 minutes
-    } else {
-        remainingTime = 180; // 3 minutes
-    }
-
-    int minutes = remainingTime / 60;
-    int seconds = remainingTime % 60;
-    QString timeText = QString("Time: %1:%2")
-                           .arg(minutes)
-                           .arg(seconds, 2, 10, QChar('0'));
-
-    timerLabel = new QLabel(timeText, this);
+    timerLabel = new QLabel("", this);
+    updateTimerLabel();
     timerLabel->setAlignment(Qt::AlignCenter);
     timerLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
 
     gameTimer = new QTimer(this);
     connect(gameTimer, &QTimer::timeout, this, &GameController::updateTimer);
-    gameTimer->start(1000); // tick every 1 second
+    gameTimer->start(1000); // tick every second
 
     // Free hints label
     freeHintsLabel = new QLabel("Free Hints: " + QString::number(freeHintsCount), this);
@@ -306,11 +288,22 @@ void GameController::setUpUI() {
     freeHintsLabel->setFixedWidth(120);
     freeHintsLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
 
-    // Wheel label
+    // Wheel result label
     wheelResultLabel = new QLabel("", this);
     wheelResultLabel->setAlignment(Qt::AlignCenter);
     wheelResultLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
+}
 
+void GameController::setUpUI() {
+
+    // Guessed letters box
+    guessedLettersBox = new QLineEdit(this);
+    guessedLettersBox->setReadOnly(true);
+    guessedLettersBox->setAlignment(Qt::AlignCenter);
+    guessedLettersBox->setStyleSheet("font-size: 18px;");
+    guessedLettersBox->setFixedWidth(450);
+
+    setUpLabels();
     setUpWheel();
 
     // Left buttons
