@@ -9,7 +9,7 @@ Instructions::Instructions(QWidget *parent)
     : QWidget(parent)
 {
     // Set window size
-    setFixedSize(700, 500);
+    setFixedSize(750, 550);
 
     // Background image
     QLabel *background = new QLabel(this);

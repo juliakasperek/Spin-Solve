@@ -3,15 +3,17 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPixmap>
+#include <QTimer>
 
 // The Help class is a QWidget window that shows players how to play the game.
 Help::Help(QWidget *parent)
     : QWidget(parent)
 {
-    // Set window size
-    setFixedSize(700, 500);
+    // Set a fixed window size
+    setFixedSize(750, 550);
 
     // Background image
+    // Background image using QLabel
     QLabel *background = new QLabel(this);
     QPixmap pix(":/images/images/Instructions.png");
     background->setPixmap(pix.scaled(size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
@@ -37,7 +39,7 @@ Help::Help(QWidget *parent)
 
         "<b>2. Spin the Wheel:</b><br>"
         "- Click 'Spin' to spin the wheel and reveal a segment.<br>"
-        "- You can earn gems for correct guesses, or special hints (hints do not require a correct letter guess).<br><br>"
+        "- You can earn gems for correct guesses, or special hints.<br><br>"
 
         "<b>3. Timer:</b><br>"
         "- Watch out for segments that subtract time - <b>Time is important!</b><br><br>"

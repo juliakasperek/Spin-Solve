@@ -15,8 +15,10 @@
 #include <QTimer>
 
 GameController::GameController(int diff, QWidget *parent)
-    : QWidget(parent), difficulty(diff), playerGems(0, this)
-{
+    : QWidget(parent), difficulty(diff), playerGems(0, this) {
+
+    setFixedSize(750, 550);
+
     categoryLabel = new QLabel("Category: ", this);
     categoryLabel->setAlignment(Qt::AlignCenter);
     categoryLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
@@ -43,170 +45,143 @@ void GameController::setUpWheel() {
 
             wheelResultLabel->setText("Wheel landed on: " + landedSegment);
 
-            std::function<void()> askForLetter;
-            askForLetter = [=, &askForLetter]() {
+            startLetterGuessing(landedSegment);
+        });
+    }
+}
 
-                if (!gameActive) return;   // <-- add this
-                if (letterDialogOpen) return;
-                letterDialogOpen = true;
+void GameController::startLetterGuessing(const QString &landedSegment) {
 
-                if (remainingTime <= 0) return;
+    if (!gameActive || remainingTime <= 0 || letterDialogOpen) return;
 
-                QInputDialog *dialog = new QInputDialog(this);
-                dialog->setWindowTitle("Guess a Letter");
-                dialog->setLabelText("Enter a letter (non-vowel only):");
-                dialog->setTextValue("");
-                dialog->setInputMode(QInputDialog::TextInput);
-                dialog->setModal(true);
+    letterDialogOpen = true;
 
-                activeDialogs.append(dialog);
+    auto askForLetter = std::make_shared<std::function<void()>>();
 
-                connect(dialog, &QInputDialog::textValueSelected, this, [=](const QString &guess){
-                    dialog->deleteLater();
-                    activeDialogs.removeOne(dialog);
+    *askForLetter = [this, landedSegment, askForLetter]() {
+        if (!gameActive || remainingTime <= 0) {
+            letterDialogOpen = false;
+            return;
+        }
 
-                    letterDialogOpen = false;
+        QInputDialog *dialog = new QInputDialog(this);
+        dialog->setWindowTitle("Guess a Letter");
+        dialog->setLabelText("Enter a letter (non-vowel only):");
+        dialog->setTextValue("");
+        dialog->setInputMode(QInputDialog::TextInput);
+        dialog->setModal(true);
 
-                    if (guess.isEmpty() || guess.length() != 1 || !guess[0].isLetter()) {
-                        QMessageBox *msg = new QMessageBox(this);
-                        msg->setIcon(QMessageBox::Warning);
-                        msg->setWindowTitle("Invalid Input");
-                        msg->setText("Enter a single letter (A-Z).");
+        activeDialogs.append(dialog);
 
-                        activeDialogs.append(msg);
+        connect(dialog, &QInputDialog::textValueSelected, this, [=](const QString &guess) {
+            dialog->deleteLater();
+            activeDialogs.removeOne(dialog);
 
-                        connect(msg, &QDialog::finished, this, [=](){
-                            activeDialogs.removeOne(msg);
-                            msg->deleteLater();
-                            QTimer::singleShot(0, this, askForLetter);
-                        });
-                        msg->open();
-                        return;
-                    }
+            letterDialogOpen = false;
 
-                    QChar letter = guess[0].toUpper();
+            QChar letter = guess.isEmpty() ? QChar() : guess[0].toUpper();
 
-                    if (QString("AEIOU").contains(letter)) {
-                        QMessageBox *msg = new QMessageBox(this);
-                        msg->setIcon(QMessageBox::Information);
-                        msg->setWindowTitle("Invalid Letter");
-                        msg->setText("Vowels are not allowed!");
-
-                        activeDialogs.append(msg);
-
-                        connect(msg, &QDialog::finished, this, [=](){
-                            activeDialogs.removeOne(msg);
-                            msg->deleteLater();
-
-                            QTimer::singleShot(0, this, askForLetter);
-                        });
-                        msg->open();
-                        return;
-                    }
-
-                    if (guessedLetters.contains(letter)) {
-                        QMessageBox *msg = new QMessageBox(this);
-                        msg->setIcon(QMessageBox::Information);
-                        msg->setWindowTitle("Already Guessed");
-                        msg->setText("You already guessed that letter!");
-
-                        activeDialogs.append(msg);
-
-                        connect(msg, &QDialog::finished, this, [=](){
-                            activeDialogs.removeOne(msg);
-                            msg->deleteLater();
-
-                            QTimer::singleShot(0, this, askForLetter);
-                        });
-                        msg->open();
-                        return;
-                    }
-
-                    guessedLetters.insert(letter);
-                    QString lettersText = "Guessed Letters: ";
-                    for (auto l : guessedLetters)
-                        lettersText += QString(l) + " ";
-                    guessedLettersBox->setText(lettersText);
-
-                    if (phraseHandler->guessLetter(letter)) {
-                        updateDisplayedPhrase();
-
-                        if (landedSegment.contains("gem")) {
-                            int gemAmount = landedSegment.split(" ")[0].toInt();
-                            playerGems.addGems(gemAmount);
-                        }
-
-                        if (landedSegment == "Free Hint") {
-                            freeHintsCount++;
-                            freeHintsLabel->setText("Free Hints: " + QString::number(freeHintsCount));
-                        }
-
-                        if (phraseHandler->isComplete()) {
-
-                            gameTimer->stop();
-
-                            QMessageBox *msg = new QMessageBox(this);
-                            msg->information(this, "You Win!", "You guessed the full phrase!");
-                            activeDialogs.append(msg);
-                            connect(msg, &QDialog::finished, this, [=](){
-                                activeDialogs.removeOne(msg);
-                                msg->deleteLater();
-                            });
-                        }
-
-                    } else {
-                        // Incorrect guess
-                        if (landedSegment == "-5 seconds") {
-                            remainingTime -= 5;
-                        } else if (landedSegment == "-10 seconds") {
-                            remainingTime -= 10;
-                        } else {
-                            QMessageBox *msg = new QMessageBox(this);
-                            msg->setIcon(QMessageBox::Information);
-                            msg->setWindowTitle("Incorrect");
-                            msg->setText("The letter is not in the phrase.");
-
-                            activeDialogs.append(msg);
-
-                            connect(msg, &QDialog::finished, this, [=](){
-                                activeDialogs.removeOne(msg);
-                                msg->deleteLater();
-                            });
-                            msg->open();
-                            return;
-                        }
-
-                        if (remainingTime < 0) remainingTime = 0;
-
-                        int minutes = remainingTime / 60;
-                        int seconds = remainingTime % 60;
-                        timerLabel->setText(QString("Time: %1:%2")
-                                                .arg(minutes)
-                                                .arg(seconds, 2, 10, QChar('0')));
-
-                        if (remainingTime == 0) {
-                            if (wheel) wheel->stopSpin();
-                            endGame("Time's Up!", "You ran out of time! Do you want to start a new game?");
-                            return;
-                        }
-                    }
-                });
-
-                dialog->open();
-
-            };
-
-            if (remainingTime <= 0) {
+            if (!letter.isLetter()) {
+                showWarningAndRetry("Invalid Input", "Enter a single letter (A-Z).", *askForLetter, true);
                 return;
             }
 
-            askForLetter();
-        });
-    }
-};
+            if (QString("AEIOU").contains(letter)) {
+                showWarningAndRetry("Invalid Letter", "Vowels are not allowed!", *askForLetter, true);
+                return;
+            }
 
-void GameController::initializePhrase()
-{
+            if (guessedLetters.contains(letter)) {
+                showWarningAndRetry("Already Guessed", "You already guessed that letter!", *askForLetter, true);
+                return;
+            }
+
+            guessedLetters.insert(letter);
+
+            // Update guessed letters
+            QString lettersText = "Guessed Letters: ";
+            for (auto l : guessedLetters)
+                lettersText += QString(l) + " ";
+            guessedLettersBox->setText(lettersText);
+
+
+            if (phraseHandler->guessLetter(letter)) {
+                updateDisplayedPhrase();
+                handleWheelReward(landedSegment);
+
+                if (phraseHandler->isComplete()) {
+                    endGame("You Win!", "You guessed the full phrase!");
+                }
+            } else {
+                handleIncorrectGuess(landedSegment);
+            }
+            letterDialogOpen = false;
+        });
+
+        dialog->open();
+    };
+
+    (*askForLetter)();
+}
+
+void GameController::showWarningAndRetry(const QString &title, const QString &text, std::function<void()> retry, bool retryDialog = false) {
+    QMessageBox *msg = new QMessageBox(this);
+    msg->setIcon(QMessageBox::Warning);
+    msg->setWindowTitle(title);
+    msg->setText(text);
+    activeDialogs.append(msg);
+
+    connect(msg, &QDialog::finished, this, [=]() {
+        activeDialogs.removeOne(msg);
+        if (retryDialog && retry) {
+            QTimer::singleShot(0, this, retry);  // only retry when desired
+        }
+    });
+
+    msg->open();
+}
+
+void GameController::handleWheelReward(const QString &landedSegment) {
+    if (landedSegment.contains("gem")) {
+        int gemAmount = landedSegment.split(" ")[0].toInt();
+        playerGems.addGems(gemAmount);
+
+    } else if (landedSegment == "Free Hint") {
+        freeHintsCount++;
+        freeHintsLabel->setText("Free Hints: " + QString::number(freeHintsCount));
+    }
+}
+
+void GameController::handleIncorrectGuess(const QString &landedSegment) {
+    if (landedSegment == "-5 seconds") {
+        remainingTime -= 5;
+
+    } else if (landedSegment == "-10 seconds") {
+        remainingTime -= 10;
+
+    } else {
+        showWarningAndRetry("Incorrect", "The letter is not in the phrase.", nullptr, false);
+    }
+
+    if (remainingTime < 0) remainingTime = 0;
+
+    updateTimerLabel();
+
+    if (remainingTime == 0) {
+        if (wheel) wheel->stopSpin();
+        endGame("Time's Up!", "You ran out of time! Do you want to start a new game?");
+    }
+}
+
+void GameController::updateTimerLabel() {
+    int minutes = remainingTime / 60;
+    int seconds = remainingTime % 60;
+    timerLabel->setText(QString("Time: %1:%2")
+                            .arg(minutes)
+                            .arg(seconds, 2, 10, QChar('0')));
+}
+
+void GameController::initializePhrase() {
     PhraseLibrary library;
 
     Phrase selectedPhrase = library.getRandomPhrase(difficulty == 0 ? "easy" : "hard");
@@ -239,6 +214,16 @@ void GameController::updateDisplayedPhrase()
 }
 
 void GameController::updateTimer() {
+
+    if (remainingTime < 12) {
+        timerLabel->setStyleSheet(
+            "font-size: 18px; font-weight: bold; color: red;"
+            );
+    } else {
+        timerLabel->setStyleSheet(
+            "font-size: 18px; font-weight: bold; color: #8F0774;"
+            );
+    }
 
     if (remainingTime <= 0) {
         gameTimer->stop();
@@ -400,211 +385,100 @@ void GameController::spinWheel()
     if (wheel) wheel->spinWheel();
 }
 
-void GameController::buyVowel()
-{
+void GameController::buyVowel() {
+
+    gameActive = false;
+
+    if (wheel)
+        wheel->stopSpin();
+
     if (playerGems.getGems() < 3) {
-        QMessageBox *msg = new QMessageBox(this);
-        msg->setIcon(QMessageBox::Warning);
-        msg->setWindowTitle("Not enough gems");
-        msg->setText("Need 3 gems!");
+        showWarningAndRetry("Not enough gems", "Need 3 gems!", nullptr, false);
+    } else {
 
-        activeDialogs.append(msg);
-        connect(msg, &QDialog::finished, this, [=](){
-            activeDialogs.removeOne(msg);
-            msg->deleteLater();
-        });
+        playerGems.spendGems(3);
 
-        msg->open();
-        return;
+        auto askVowel = std::make_shared<std::function<void()>>();
+
+        *askVowel = [this, askVowel]() {
+            QInputDialog *dialog = new QInputDialog(this);
+            dialog->setWindowTitle("Buy a Vowel");
+            dialog->setLabelText("Enter a vowel (A, E, I, O, U):");
+            dialog->setTextValue("");
+            dialog->setInputMode(QInputDialog::TextInput);
+            dialog->setModal(true);
+
+            activeDialogs.append(dialog);
+
+            connect(dialog, &QInputDialog::textValueSelected, this, [=](const QString &guess) {
+                dialog->deleteLater();
+                activeDialogs.removeOne(dialog);
+
+                if (guess.isEmpty() || guess.length() != 1 || !guess[0].isLetter()) {
+                    showWarningAndRetry("Invalid Input", "Enter a single vowel.", *askVowel, true);
+                    return;
+                }
+
+                QChar letter = guess[0].toUpper();
+
+                if (!QString("AEIOU").contains(letter)) {
+                    showWarningAndRetry("Invalid Input", "That's not a vowel.", *askVowel, true);
+                    return;
+                }
+
+                if (guessedLetters.contains(letter)) {
+                    showWarningAndRetry("Already Guessed", "This letter was already guessed.", *askVowel, true);
+                    return;
+                }
+
+                guessedLetters.insert(letter);;
+
+                QString lettersText = "Guessed Letters: ";
+                for (auto l : guessedLetters) lettersText += QString(l) + " ";
+                guessedLettersBox->setText(lettersText);
+
+                // Guess the letter
+                if (phraseHandler->guessLetter(letter)) {
+                    updateDisplayedPhrase();
+                    if (phraseHandler->isComplete()) {
+                        showWarningAndRetry("You Win!", "You guessed the full phrase!", nullptr, false);
+                    }
+                } else {
+                    showWarningAndRetry("Incorrect", "The letter is not in the phrase.", nullptr, false);
+                }
+            });
+
+            dialog->open();
+        };
+        (*askVowel)();
     }
-
-    playerGems.spendGems(3);
-
-    while (true) {
-
-        QInputDialog *dialog = new QInputDialog(this);
-        dialog->setWindowTitle("Buy a Vowel");
-        dialog->setLabelText("Enter a vowel (A, E, I, O, U):");
-        dialog->setTextValue("");
-        dialog->setInputMode(QInputDialog::TextInput);
-        dialog->setModal(true);
-
-        // Track in activeDialogs
-        activeDialogs.append(dialog);
-
-        // Show the dialog and block until user input
-        bool ok = dialog->exec();
-        activeDialogs.removeOne(dialog);
-        dialog->deleteLater();
-
-        if (!ok) break;
-
-        QString guess = dialog->textValue();
-
-        if (!ok) break;
-
-        if (guess.isEmpty() || guess.length() != 1 || !guess[0].isLetter()) {
-            QMessageBox *msg = new QMessageBox(this);
-            msg->setIcon(QMessageBox::Warning);
-            msg->setWindowTitle("Invalid Input");
-            msg->setText("Enter a single vowel.");
-
-            activeDialogs.append(msg);
-            connect(msg, &QDialog::finished, this, [=](){
-                activeDialogs.removeOne(msg);
-                msg->deleteLater();
-            });
-
-            msg->open();
-            continue;
-        }
-
-        QChar letter = guess[0].toUpper();
-
-
-        if (!(letter == 'A' || letter == 'E' || letter == 'I' || letter == 'O' || letter == 'U')) {
-            QMessageBox *msg = new QMessageBox(this);
-            msg->setIcon(QMessageBox::Warning);
-            msg->setWindowTitle("Invalid Input");
-            msg->setText("That's not a vowel.");
-
-            activeDialogs.append(msg);
-            connect(msg, &QDialog::finished, this, [=](){
-                activeDialogs.removeOne(msg);
-                msg->deleteLater();
-            });
-
-            msg->open();
-            continue;
-        }
-
-        if (guessedLetters.contains(letter)) {
-            QMessageBox *msg = new QMessageBox(this);
-            msg->setIcon(QMessageBox::Information);
-            msg->setWindowTitle("Already Guessed");
-            msg->setText("This letter was already guessed.");
-
-            activeDialogs.append(msg);
-
-            connect(msg, &QDialog::finished, this, [=](){
-                activeDialogs.removeOne(msg);
-                msg->deleteLater();
-
-            });
-
-            msg->open();
-            continue;
-        }
-
-        guessedLetters.insert(letter);
-
-        QString lettersText = "Guessed Letters: ";
-        for (auto l : guessedLetters) lettersText += QString(l) + " ";
-        guessedLettersBox->setText(lettersText);
-
-        if (phraseHandler->guessLetter(letter)) {
-            updateDisplayedPhrase();
-            if (phraseHandler->isComplete()) {
-                QMessageBox *msg = new QMessageBox(this);
-                msg->setIcon(QMessageBox::Information);
-                msg->setWindowTitle("You Win!");
-                msg->setText("You guessed the full phrase!");
-
-                activeDialogs.append(msg);
-                connect(msg, &QDialog::finished, this, [=](){
-                    activeDialogs.removeOne(msg);
-                    msg->deleteLater();
-                });
-
-                msg->open();
-            }
-        } else {
-            QMessageBox *msg = new QMessageBox(this);
-            msg->setIcon(QMessageBox::Information);
-            msg->setWindowTitle("Incorrect");
-            msg->setText("The letter is not in the phrase.");
-
-            activeDialogs.append(msg);
-            connect(msg, &QDialog::finished, this, [=](){
-                activeDialogs.removeOne(msg);
-                msg->deleteLater();
-            });
-
-            msg->open();
-        }
-
-        break;
-    }
+    gameActive = true;
 }
 
 void GameController::buyHint() {
 
+    gameActive = false;
+
+    if (wheel)
+        wheel->stopSpin();
+
     if (freeHintsCount > 0) {
+        auto useFreeHint = [this]() {
+            freeHintsCount--;
+            freeHintsLabel->setText("Free Hints: " + QString::number(freeHintsCount));
+            showWarningAndRetry("Hint", "Here's your free hint!", nullptr, false);
+        };
 
-        QMessageBox *msg = new QMessageBox(this);
-        msg->setIcon(QMessageBox::Question);
-        msg->setWindowTitle("Use Free Hint");
-        msg->setText("You have a free hint! Use it?");
-        msg->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        showWarningAndRetry("Use Free Hint", "You have a free hint! Use it?", useFreeHint, true);
 
-        activeDialogs.append(msg);
-        connect(msg, &QDialog::finished, this, [=](int result){
-            activeDialogs.removeOne(msg);
-            msg->deleteLater();
-
-            if (result == QMessageBox::Yes) {
-                freeHintsCount--;
-                freeHintsLabel->setText("Free Hints: " + QString::number(freeHintsCount));
-
-                QMessageBox *hint = new QMessageBox(this);
-                hint->setIcon(QMessageBox::Information);
-                hint->setWindowTitle("Hint");
-                hint->setText("Here's your free hint!");
-
-                activeDialogs.append(hint);
-                connect(hint, &QDialog::finished, this, [=](){
-                    activeDialogs.removeOne(hint);
-                    hint->deleteLater();
-                });
-
-                hint->open();
-            }
-        });
-
-        msg->open();
-        return;
+    } else if (playerGems.getGems() < 5) {
+        showWarningAndRetry("Not enough gems", "You need 5 gems or a free hint!", nullptr, false);
+    } else {
+        playerGems.spendGems(5);
+        showWarningAndRetry("Hint", "Hint purchased with 5 gems!", nullptr, false);
     }
 
-    if (playerGems.getGems() < 5) {
-        QMessageBox *msg = new QMessageBox(this);
-        msg->setIcon(QMessageBox::Warning);
-        msg->setWindowTitle("Not enough gems");
-        msg->setText("Need 5 gems or a free hint!");
-
-        activeDialogs.append(msg);
-        connect(msg, &QDialog::finished, this, [=](){
-            activeDialogs.removeOne(msg);
-            msg->deleteLater();
-        });
-
-        msg->open();
-        return;
-    }
-
-    playerGems.spendGems(5);
-
-    QMessageBox *msg = new QMessageBox(this);
-    msg->setIcon(QMessageBox::Information);
-    msg->setWindowTitle("Hint");
-    msg->setText("Hint purchased with 5 gems!");
-
-    activeDialogs.append(msg);
-    connect(msg, &QDialog::finished, this, [=](){
-        activeDialogs.removeOne(msg);
-        msg->deleteLater();
-    });
-
-    msg->open();
+    gameActive = true;
 }
 
 void GameController::solvePhrase()
@@ -638,10 +512,10 @@ void GameController::solvePhrase()
     QString phraseUpper = phraseHandler->getOriginalPhrase().toUpper();
 
     if (inputUpper == phraseUpper) {
-        // Player guessed correctly
         phraseHandler->revealPhrase();
         updateDisplayedPhrase();
 
+        // Custom end-game dialog
         QMessageBox *msg = new QMessageBox(this);
         msg->setWindowTitle("You Won!");
         msg->setText("Congratulations! You guessed the full phrase correctly!");
@@ -663,22 +537,14 @@ void GameController::solvePhrase()
         msg->open();
 
     } else {
+        remainingTime -= 5; // an incorrect guess costs 5 seconds of users time
+        if (remainingTime < 0) remainingTime = 0;
+        updateTimerLabel();
+
         // Incorrect guess
-        QMessageBox *msg = new QMessageBox(this);
-        msg->setWindowTitle("Incorrect");
-        msg->setText("Sorry, that was not correct. Keep playing!");
-
-        activeDialogs.append(msg);
-        connect(msg, &QDialog::finished, this, [=](){
-            activeDialogs.removeOne(msg);
-            msg->deleteLater();
-
-            // Resume game
-            gameActive = true;
-            if (gameTimer) gameTimer->start(1000);
-        });
-
-        msg->open();
+        showWarningAndRetry("Incorrect", "Sorry, that was not correct. Keep playing!", nullptr, false);
+        gameActive = true;
+        if (gameTimer) gameTimer->start(1000);
     }
 }
 
@@ -758,7 +624,6 @@ void GameController::returnToMainMenu(bool skipConfirmation) {
 
     MainController *mainMenu = new MainController();
     mainMenu->setWindowTitle("Spin & Solve");
-    mainMenu->resize(700, 500);
     mainMenu->show();
 
     this->close();

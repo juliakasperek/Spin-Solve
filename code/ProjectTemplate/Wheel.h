@@ -4,7 +4,6 @@
 #include <QWidget>
 #include <QGraphicsScene>
 #include <QGraphicsView>
-#include <QPushButton>
 #include <QPropertyAnimation>
 #include <QGraphicsPixmapItem>
 
@@ -27,6 +26,7 @@ public:
 
     void spinWheel();
     void stopSpin();
+    int calculateSegment(double angle) const;
 
 signals:
     void landedSegment(int index);
@@ -38,17 +38,17 @@ private:
     // Graphics components
     QGraphicsScene *scene = nullptr;
     QGraphicsView *view = nullptr;
+    WheelItem *wheelItem = nullptr;
     QGraphicsPixmapItem *arrowItem = nullptr;
 
     // Animation
     QPropertyAnimation *animation = nullptr;
-    WheelItem *wheelItem = nullptr;
 
     // Spin properties
-    int endAngle;
+    int endAngle = 0;
     int numSegments = 8;
     double segmentAngle = 360.0 / numSegments;
-    double currentRotation = 0;
+    double currentRotation = 0.0;
     bool isSpinning = false;
 
     // Helper functions

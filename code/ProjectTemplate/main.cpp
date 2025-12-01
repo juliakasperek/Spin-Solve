@@ -11,8 +11,7 @@ int main(int argc, char *argv[]) {
     // Create the main game window
     MainController window;
     window.setWindowTitle("Spin & Solve");
-    window.resize(700, 500);
-    window.setFixedSize(700, 500);
+    window.setFixedSize(750, 550);
     window.show();
 
     return app.exec();

@@ -14,7 +14,7 @@
 
 MainController::MainController(QWidget *parent) : QWidget(parent) {
     // Set fixed size
-    setFixedSize(700, 500);
+    setFixedSize(750, 550);
 
     // Background image using QLabel
     QLabel *background = new QLabel(this);
@@ -66,8 +66,7 @@ void MainController::startGame() {
             this->show();
         });
 
-        gameScreen->setWindowTitle("Spin & Solve - Game");
-        gameScreen->resize(700, 500);
+        gameScreen->setWindowTitle("Spin & Solve");
         gameScreen->show();
 
         this->hide();
@@ -82,8 +81,7 @@ void MainController::showInstructions() {
         this->show();
     });
 
-    instructions->setWindowTitle("Spin & Solve - Instructions");
-    instructions->resize(700, 500);
+    instructions->setWindowTitle("Spin & Solve");
     instructions->show();
 
     this->hide();

@@ -71,6 +71,11 @@ private:
     void closeAllDialogs();
     void endGame(const QString &title, const QString &message);
     void askForLetter();
+    void startLetterGuessing(const QString &landedSegment);
+    void showWarningAndRetry(const QString &title, const QString &text, std::function<void()> retry, bool retryDialog);
+    void handleWheelReward(const QString &landedSegment);
+    void handleIncorrectGuess(const QString &landedSegment);
+    void updateTimerLabel();
 
 private slots:
     void spinWheel();
