@@ -8,8 +8,6 @@ QString removeSpaces(const QString &str) {
     return result;
 }
 
-// ------------------- PhraseHandler Tests -------------------
-
 // Test correct and incorrect letters
 TEST(PhraseHandlerTest, GuessLetters) {
     PhraseHandler handler("HELLO");
@@ -31,7 +29,7 @@ TEST(PhraseHandlerTest, GuessLetters) {
     EXPECT_EQ(removeSpaces(handler.getDisplayedPhrase()), "HELLO");
 }
 
-// Test repeated letter guesses
+// Test repeated letter guessing
 TEST(PhraseHandlerTest, RepeatedLetterGuess) {
     PhraseHandler handler("BALLOON");
 

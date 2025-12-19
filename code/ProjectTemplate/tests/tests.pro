@@ -26,7 +26,6 @@ HEADERS += \
     ../PlayerGems.h \
     ../Instructions.h \
     ../Wheel.h \
-    MockDifficulty.h \
     MockWheel.h \
     ../PhraseHandler.h \
     ../PhraseLibrary.h \

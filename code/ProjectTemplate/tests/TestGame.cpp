@@ -6,14 +6,13 @@
 #include "GameController.h"
 #include "MockWheel.h"
 
-using ::testing::_;
-
 class GameControllerTest : public ::testing::Test {
 protected:
     static QApplication* app;
     GameController* controller;
     MockWheel* mockWheel;
 
+    // Initializes everything needed before each tests runs
     void SetUp() override {
         if (!app) {
             int argc = 0;
@@ -27,6 +26,7 @@ protected:
         controller->setWheel(mockWheel);
     }
 
+    // Cleans up after each test.
     void TearDown() override {
         delete controller;  // mockWheel deleted inside controller
     }
@@ -34,16 +34,16 @@ protected:
 
 QApplication* GameControllerTest::app = nullptr;
 
-// -------------------- UI Existence Tests --------------------
+// -------------------- UI Tests --------------------
 
-// Labels exist
+// Verifies that all expected labels are created
 TEST_F(GameControllerTest, LabelsExist) {
     EXPECT_NE(controller->getPhraseLabel(), nullptr);
     EXPECT_NE(controller->getCategoryLabel(), nullptr);
     EXPECT_NE(controller->getTimerLabel(), nullptr);
 }
 
-// Buttons exist
+// Verifies that all expected buttons are created
 TEST_F(GameControllerTest, ButtonsExist) {
     EXPECT_NE(controller->getSpinButton(), nullptr);
     EXPECT_NE(controller->getBuyVowelButton(), nullptr);
@@ -51,17 +51,15 @@ TEST_F(GameControllerTest, ButtonsExist) {
     EXPECT_NE(controller->getSolveButton(), nullptr);
 }
 
-// -------------------- Wheel Interaction Tests --------------------
+// -------------------- Wheel Tests --------------------
 
-// spinWheel calls the wheel
+// Cgecks that the GameController class signals the wheel to spin
 TEST_F(GameControllerTest, SpinWheelCallsWheel) {
     EXPECT_CALL(*mockWheel, spinWheel()).Times(1);
     controller->testSpinWheel();  // use public wrapper
 }
 
-// -------------------- Wheel State Tests --------------------
-
-// Test that spinning flag is updated
+// Verifies that the wheel's spinning state is updated correctly
 TEST_F(GameControllerTest, WheelSpinningFlag) {
     mockWheel->setSpinning(false);
     EXPECT_FALSE(mockWheel->spinning());
@@ -76,7 +74,7 @@ TEST_F(GameControllerTest, WheelSpinningFlag) {
 
 // -------------------- Signal Tests --------------------
 
-// Test that landedSegment signal is emitted when stopping wheel
+// Tests if landedSegment signal is emitted when stopping wheel
 TEST_F(GameControllerTest, LandedSegmentSignalEmitted) {
     Wheel realWheel;
     QSignalSpy spy(&realWheel, &Wheel::landedSegment);
@@ -87,6 +85,7 @@ TEST_F(GameControllerTest, LandedSegmentSignalEmitted) {
     EXPECT_EQ(spy.count(), 1);
 }
 
+// Handles an edge case where the wheel does not attempt to spin again when its already spinning
 TEST_F(GameControllerTest, SpinWheelWhileAlreadySpinning) {
     mockWheel->setSpinning(true);
 
