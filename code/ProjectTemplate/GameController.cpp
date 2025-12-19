@@ -147,15 +147,15 @@ void GameController::handleWheelReward(const QString &landedSegment) {
 }
 
 void GameController::handleIncorrectGuess(const QString &landedSegment) {
+
     if (landedSegment == "-5 seconds") {
         remainingTime -= 5;
-
     } else if (landedSegment == "-10 seconds") {
         remainingTime -= 10;
-
-    } else {
-        showWarningAndRetry("Incorrect", "The letter is not in the phrase.", nullptr, false);
     }
+
+    // Always show that the letter is not in the phrase
+    showWarningAndRetry("Incorrect", "The letter is not in the phrase.", nullptr, false);
 
     if (remainingTime < 0) remainingTime = 0;
 
@@ -178,6 +178,7 @@ void GameController::updateTimerLabel() {
 void GameController::initializePhrase() {
     PhraseLibrary library;
 
+    // Pick a random phrase
     Phrase selectedPhrase = library.getRandomPhrase(difficulty == 0 ? "easy" : "hard");
 
     QString phrase = QString::fromStdString(selectedPhrase.text);
@@ -194,7 +195,17 @@ void GameController::initializePhrase() {
 
     phraseHandler = new PhraseHandler(phrase);
     displayedPhrase = phraseHandler->getDisplayedPhrase();
+
+    // Reset hint tracking for this new phrase
+    currentHintIndex = 0;
+
+    // Load hints directly from the selectedPhrase object
+    hintsForCurrentPhrase.clear();
+    for (const std::string &hint : selectedPhrase.hints) {
+        hintsForCurrentPhrase.append(QString::fromStdString(hint));
+    }
 }
+
 
 void GameController::updateDisplayedPhrase()
 {
@@ -204,7 +215,7 @@ void GameController::updateDisplayedPhrase()
 
     // Display using monospace font and avoid HTML collapsing spaces
     phraseLabel->setText(displayedPhrase);
-    phraseLabel->setStyleSheet("font-family: monospace; font-size: 30px; font-weight: bold;");
+    phraseLabel->setStyleSheet("font-family: monospace; font-size: 30px; font-weight: bold; color: #8F0774;");
 }
 
 void GameController::updateTimer() {
@@ -223,10 +234,18 @@ void GameController::updateTimer() {
         gameTimer->stop();
         closeAllDialogs();
 
+        // Reveal the full phrase if timer runs out
+        if (phraseHandler) {
+            phraseHandler->revealPhrase();
+            updateDisplayedPhrase();
+        }
+
         QMessageBox::StandardButton reply = QMessageBox::question(
             this,
             "Time's Up!",
-            "You ran out of time! Do you want to start a new game?",
+            "You ran out of time!\n\nThe phrase was:\n\n\""
+                + phraseHandler->getOriginalPhrase() +
+                "\"\n\nDo you want to start a new game?",
             QMessageBox::Yes | QMessageBox::No
             );
 
@@ -246,25 +265,28 @@ void GameController::updateTimer() {
 
 void GameController::setUpLabels() {
 
-    // Category label
-    categoryLabel = new QLabel("Category: ", this);
-    categoryLabel->setAlignment(Qt::AlignCenter);
-    categoryLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
+    auto createLabel = [this](const QString &text, int fontSize = 18, int width = 0) {
+        QLabel *label = new QLabel(text, this);
+        label->setAlignment(Qt::AlignCenter);
+        if (width > 0) label->setFixedWidth(width);
+        label->setStyleSheet(QString("font-size: %1px; color: #8F0774; font-weight: bold;").arg(fontSize));
+        return label;
+    };
+
+    // Category
+    categoryLabel = createLabel("Category: ", 18);
+    categoryLabel->setObjectName("categoryLabel");
 
     initializePhrase();
 
     // Phrase label
-    phraseLabel = new QLabel(displayedPhrase, this);
-    phraseLabel->setAlignment(Qt::AlignCenter);
+    phraseLabel = createLabel(displayedPhrase, 30);
     phraseLabel->setWordWrap(true);
-    phraseLabel->setStyleSheet("font-size: 30px; font-weight: bold;");
+    phraseLabel->setObjectName("phraseLabel");
 
     // Gems label
-    gemsLabel = new QLabel("💎 Gems: " + QString::number(playerGems.getGems()), this);
-    gemsLabel->setAlignment(Qt::AlignCenter);
-    gemsLabel->setFixedWidth(100);
-    gemsLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
-
+    gemsLabel = createLabel("💎 Gems: " + QString::number(playerGems.getGems()), 18, 100);
+    gemsLabel->setObjectName("gemsLabel");
     connect(&playerGems, &PlayerGems::gemsChanged, this, [=](int newGems){
         gemsLabel->setText("💎 Gems: " + QString::number(newGems));
     });
@@ -273,25 +295,20 @@ void GameController::setUpLabels() {
     int initialTime = (difficulty == 0) ? 120 : 180; // 20 or 180 seconds
     remainingTime = initialTime;
 
-    timerLabel = new QLabel("", this);
+    timerLabel = createLabel("");
+    timerLabel->setObjectName("timerLabel");
     updateTimerLabel();
-    timerLabel->setAlignment(Qt::AlignCenter);
-    timerLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
 
     gameTimer = new QTimer(this);
     connect(gameTimer, &QTimer::timeout, this, &GameController::updateTimer);
-    gameTimer->start(1000); // tick every second
 
     // Free hints label
-    freeHintsLabel = new QLabel("Free Hints: " + QString::number(freeHintsCount), this);
-    freeHintsLabel->setAlignment(Qt::AlignCenter);
-    freeHintsLabel->setFixedWidth(120);
-    freeHintsLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
+    freeHintsLabel = createLabel("Free Hints: " + QString::number(freeHintsCount), 18, 120);
+    freeHintsLabel->setObjectName("freeHintsLabel");
 
     // Wheel result label
-    wheelResultLabel = new QLabel("", this);
-    wheelResultLabel->setAlignment(Qt::AlignCenter);
-    wheelResultLabel->setStyleSheet("font-size: 18px; color: #8F0774; font-weight: bold;");
+    wheelResultLabel = createLabel("", 16);
+    wheelResultLabel->setObjectName("wheelResultLabe");
 }
 
 void GameController::setUpUI() {
@@ -300,8 +317,9 @@ void GameController::setUpUI() {
     guessedLettersBox = new QLineEdit(this);
     guessedLettersBox->setReadOnly(true);
     guessedLettersBox->setAlignment(Qt::AlignCenter);
-    guessedLettersBox->setStyleSheet("font-size: 18px;");
+    guessedLettersBox->setStyleSheet("font-size: 15px;");
     guessedLettersBox->setFixedWidth(450);
+    guessedLettersBox->setFixedHeight(26);
 
     setUpLabels();
     setUpWheel();
@@ -322,37 +340,86 @@ void GameController::setUpUI() {
     leftButtonsLayout->addStretch();
     leftButtonsLayout->setSpacing(10);
 
-    // --- Wheel + guessed letters vertically ---
+    // --- Wheel + guessed letters ---
     QVBoxLayout *wheelLayout = new QVBoxLayout();
     wheelLayout->addWidget(wheel, 0, Qt::AlignCenter);
     wheelLayout->addWidget(wheelResultLabel, 0, Qt::AlignCenter);
-    wheelLayout->setSpacing(0);
+    wheelLayout->addSpacing(-5);
     wheelLayout->addWidget(guessedLettersBox, 0, Qt::AlignCenter);
+    wheelLayout->addStretch();
     wheelLayout->setAlignment(Qt::AlignCenter);
 
-    // --- Wheel row ---
+    // --- Labels container for Gems and Free Hints ---
     QVBoxLayout *labelsLayout = new QVBoxLayout();
+    labelsLayout->addSpacing(140);;  // Push labels down to center
     labelsLayout->addWidget(gemsLabel, 0, Qt::AlignCenter);
     labelsLayout->addWidget(freeHintsLabel, 0, Qt::AlignCenter);
+    labelsLayout->addStretch();  // Push labels up to center
+    labelsLayout->setSpacing(10);
 
+    // --- Wheel row ---
     QHBoxLayout *wheelRow = new QHBoxLayout();
     wheelRow->addLayout(leftButtonsLayout);
-    wheelRow->addSpacing(0);
+    wheelRow->addSpacing(20);
     wheelRow->addLayout(wheelLayout);
-    wheelRow->addSpacing(0);
+    wheelRow->addSpacing(20);
     wheelRow->addLayout(labelsLayout);
 
     // --- Bottom action buttons ---
     spinButton = new QPushButton("Spin Wheel", this);
+    spinButton->setObjectName("spinButton");
     buyVowelButton = new QPushButton("Buy Vowel (3 gems)", this);
+    buyVowelButton->setObjectName("buyVowelButton");
     buyHintButton = new QPushButton("Buy Hint (5 gems)", this);
+    buyHintButton->setObjectName("buyHintButton");
     solveButton = new QPushButton("Solve Phrase", this);
+    solveButton->setObjectName("solveButton");
 
+    // Set button sizes
+    spinButton->setFixedSize(145, 40);
+    buyVowelButton->setFixedSize(145, 40);
+    buyHintButton->setFixedSize(145, 40);
+    solveButton->setFixedSize(145, 40);
+
+    // Set styles
+    spinButton->setStyleSheet(
+        "background-color: #bb129b;"
+        "color: #efd4ed;"
+        "font-family: Verdana;"
+        "font-weight: bold;"
+        "font-size: 16px;"
+        "border: 4px solid #5C1F53;"
+        "border-radius: 5px;"
+        );
+    buyVowelButton->setStyleSheet(
+        "background-color: #5C1F53;"
+        "color: white;"
+        "font-family: Verdana;"
+        "font-size: 12px;"
+        "border-radius: 5px;"
+        );
+    buyHintButton->setStyleSheet(
+        "background-color: #5C1F53;"
+        "color: white;"
+        "font-family: Verdana;"
+        "font-size: 12px;"
+        "border-radius: 5px;"
+        );
+    solveButton->setStyleSheet(
+        "background-color:#5C1F53;"
+        "color: white;"
+        "font-family: Verdana;"
+        "font-size: 12px;"
+        "border-radius: 5px;"
+        );
+
+    // Connect buttons
     connect(spinButton, &QPushButton::clicked, this, &GameController::spinWheel);
     connect(buyVowelButton, &QPushButton::clicked, this, &GameController::buyVowel);
     connect(buyHintButton, &QPushButton::clicked, this, &GameController::buyHint);
     connect(solveButton, &QPushButton::clicked, this, &GameController::solvePhrase);
 
+    // Layout for bottom buttons
     QHBoxLayout *bottomButtons = new QHBoxLayout();
     bottomButtons->addStretch();
     bottomButtons->addWidget(spinButton);
@@ -360,17 +427,43 @@ void GameController::setUpUI() {
     bottomButtons->addWidget(buyHintButton);
     bottomButtons->addWidget(solveButton);
     bottomButtons->addStretch();
-    bottomButtons->setSpacing(10);
+    bottomButtons->setSpacing(15);
 
     // --- Main layout ---
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(categoryLabel);
     mainLayout->addWidget(phraseLabel);
     mainLayout->addLayout(wheelRow);
+    mainLayout->addSpacing(15); // spacing to lift guessed letters above buttons
     mainLayout->addLayout(bottomButtons);
     mainLayout->setSpacing(20);
 
     setLayout(mainLayout);
+
+    // --- Start message box before timer ---
+    QTimer::singleShot(0, this, [this]() {
+        QMessageBox *msg = new QMessageBox(this);
+        msg->setWindowTitle("How to Play");
+        msg->setText(
+            "Click the \"Spin Wheel\" button in the bottom left corner "
+            "to begin guessing letters and play the game."
+            );
+        msg->setIcon(QMessageBox::Information);
+        msg->setStandardButtons(QMessageBox::Ok);
+
+        activeDialogs.append(msg);
+
+        connect(msg, &QDialog::finished, this, [=]() {
+            activeDialogs.removeOne(msg);
+            msg->deleteLater();
+
+            // Start timer AFTER user clicks OK
+            if (gameTimer && !gameTimer->isActive())
+                gameTimer->start(1000);
+        });
+
+        msg->open();
+    });
 }
 
 void GameController::spinWheel()
@@ -449,30 +542,58 @@ void GameController::buyVowel() {
 }
 
 void GameController::buyHint() {
-
     gameActive = false;
 
     if (wheel)
         wheel->stopSpin();
 
+    const int maxHints = 3;
+
+    // Already used all 3 hints?
+    if (currentHintIndex >= maxHints) {
+        showWarningAndRetry("No more hints", "You have already used all 3 hints for this phrase.", nullptr, false);
+        gameActive = true;
+        return;
+    }
+
+    // using a free hint
     if (freeHintsCount > 0) {
-        auto useFreeHint = [this]() {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this,
+            "Use Free Hint",
+            "You have a free hint! Do you want to use it?",
+            QMessageBox::Yes | QMessageBox::No
+            );
+
+        if (reply == QMessageBox::Yes) {
             freeHintsCount--;
             freeHintsLabel->setText("Free Hints: " + QString::number(freeHintsCount));
-            showWarningAndRetry("Hint", "Here's your free hint!", nullptr, false);
-        };
 
-        showWarningAndRetry("Use Free Hint", "You have a free hint! Use it?", useFreeHint, true);
+            QString hintText = hintsForCurrentPhrase[currentHintIndex];
+            currentHintIndex++;
 
-    } else if (playerGems.getGems() < 5) {
+            showWarningAndRetry("Hint", hintText, nullptr, false);
+        }
+    }
+
+    // no free hint since not enough gems
+    else if (playerGems.getGems() < 5) {
         showWarningAndRetry("Not enough gems", "You need 5 gems or a free hint!", nullptr, false);
-    } else {
+    }
+
+    // buying a hint
+    else {
         playerGems.spendGems(5);
-        showWarningAndRetry("Hint", "Hint purchased with 5 gems!", nullptr, false);
+
+        QString hintText = hintsForCurrentPhrase[currentHintIndex];
+        currentHintIndex++;
+
+        showWarningAndRetry("Hint:", hintText, nullptr, false);
     }
 
     gameActive = true;
 }
+
 
 void GameController::solvePhrase()
 {
@@ -661,4 +782,10 @@ void GameController::paintEvent(QPaintEvent *event)
     painter.drawPixmap(rect(), background);
 
     QWidget::paintEvent(event);
+}
+
+void GameController::testSpinWheel() {
+    if (!wheel->spinning()) {       // prevent double spin
+        wheel->spinWheel();
+    }
 }

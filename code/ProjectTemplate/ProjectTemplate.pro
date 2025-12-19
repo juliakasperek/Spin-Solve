@@ -2,6 +2,8 @@ TEMPLATE = app
 CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG += qt
+CONFIG += testcase
+QT -= gui
 QT += core gui widgets
 
 SOURCES += \
@@ -30,3 +32,6 @@ HEADERS += \
 
 RESOURCES += \
     resources.qrc
+
+INCLUDEPATH += /opt/homebrew/include
+LIBS += -L/opt/homebrew/lib -lgtest -lgtest_main

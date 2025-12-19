@@ -4,6 +4,7 @@
 #include "Wheel.h"
 #include "PlayerGems.h"
 #include "PhraseHandler.h"
+#include "PhraseLibrary.h"  // Needed to access Phrase class
 
 #include <QWidget>
 #include <QLabel>
@@ -17,6 +18,22 @@ class GameController : public QWidget {
 
 public:
     explicit GameController(int diff, QWidget *parent = nullptr);
+
+//Testing
+    Wheel* getWheel() const { return wheel; }
+    QLabel* getPhraseLabel() const { return phraseLabel; }
+    QLabel* getCategoryLabel() const { return categoryLabel; }
+    QLabel* getTimerLabel() const { return timerLabel; }
+    QPushButton* getSpinButton() const { return spinButton; }
+    QPushButton* getBuyVowelButton() const { return buyVowelButton; }
+    QPushButton* getBuyHintButton() const { return buyHintButton; }
+    QPushButton* getSolveButton() const { return solveButton; }
+
+    void setWheel(Wheel* newWheel) {
+        if (wheel) delete wheel;  // optional: clean up old wheel
+        wheel = newWheel;
+    }
+    void testSpinWheel();
 
 private:
     // Game state
@@ -82,6 +99,9 @@ private:
     void handleWheelReward(const QString &landedSegment);
     void handleIncorrectGuess(const QString &landedSegment);
     void closeAllDialogs();
+
+    int currentHintIndex = 0;
+    QStringList hintsForCurrentPhrase;
 
 private slots:
     // Slots

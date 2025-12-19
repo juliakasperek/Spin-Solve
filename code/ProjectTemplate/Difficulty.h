@@ -13,8 +13,8 @@ public:
     int getSelectedDifficulty() const; // 0 = Easy, 1 = Hard
 
 private slots:
-    void easyClicked();
-    void hardClicked();
+    virtual void easyClicked();
+    virtual void hardClicked();
 
 private:
     int difficulty;

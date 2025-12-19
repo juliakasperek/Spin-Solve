@@ -12,14 +12,13 @@ PhraseHandler::PhraseHandler(const QString &phrase)
     }
 }
 
-bool PhraseHandler::guessLetter(QChar letter)
-{
+bool PhraseHandler::guessLetter(QChar letter) {
     letter = letter.toUpper();
     bool found = false;
 
     for (int i = 0; i < originalPhrase.length(); i++) {
-        if (originalPhrase[i].toUpper() == letter) {
-            currentLetters[i] = originalPhrase[i]; // preserve original case
+        if (originalPhrase[i].toUpper() == letter && currentLetters[i] == '_') {
+            currentLetters[i] = originalPhrase[i];
             found = true;
         }
     }
@@ -27,13 +26,11 @@ bool PhraseHandler::guessLetter(QChar letter)
     return found;
 }
 
-void PhraseHandler::revealPhrase()
-{
+void PhraseHandler::revealPhrase() {
     currentLetters = originalPhrase;
 }
 
-QString PhraseHandler::getDisplayedPhrase() const
-{
+QString PhraseHandler::getDisplayedPhrase() const {
     QString spaced = "";
     for (int i = 0; i < currentLetters.length(); i++) {
         if (currentLetters[i] == ' ')
@@ -44,8 +41,7 @@ QString PhraseHandler::getDisplayedPhrase() const
     return spaced;
 }
 
-bool PhraseHandler::isComplete() const
-{
+bool PhraseHandler::isComplete() const {
     for (int i = 0; i < currentLetters.length(); i++) {
         if (originalPhrase[i] != ' ' && currentLetters[i] == '_')
             return false;

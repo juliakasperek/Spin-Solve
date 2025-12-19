@@ -24,9 +24,11 @@ class Wheel : public QWidget {
 public:
     explicit Wheel(QWidget *parent = nullptr);
 
-    void spinWheel();
-    void stopSpin();
-    int calculateSegment(double angle) const;
+    virtual void spinWheel();
+    virtual void stopSpin();
+    virtual int calculateSegment(double angle) const;
+    virtual bool spinning() const;
+    virtual double rotation() const;
 
 signals:
     void landedSegment(int index);

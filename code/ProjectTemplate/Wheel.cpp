@@ -121,3 +121,6 @@ void Wheel::stopSpin() {
     emit landedSegment(calculateSegment(currentRotation));
 }
 
+bool Wheel::spinning() const { return isSpinning; }
+double Wheel::rotation() const { return currentRotation; }
+
