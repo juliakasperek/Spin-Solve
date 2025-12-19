@@ -28,7 +28,8 @@ protected:
 
     // Cleans up after each test.
     void TearDown() override {
-        delete controller;  // mockWheel deleted inside controller
+        delete controller;
+        delete mockWheel;
     }
 };
 
