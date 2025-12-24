@@ -21,7 +21,7 @@ GameController::GameController(int diff, QWidget *parent)
 
     setUpUI();
 }
-
+// --------------------------------------------------------------
 void GameController::setUpWheel() {
     if (!wheel) {
         wheel = new Wheel(this);
@@ -284,7 +284,7 @@ void GameController::setUpLabels() {
     phraseLabel->setWordWrap(true);
     phraseLabel->setObjectName("phraseLabel");
 
-    // Gems label
+    // Gems label   --------------------------------------------------------------------
     gemsLabel = createLabel("💎 Gems: " + QString::number(playerGems.getGems()), 18, 100);
     gemsLabel->setObjectName("gemsLabel");
     connect(&playerGems, &PlayerGems::gemsChanged, this, [=](int newGems){
